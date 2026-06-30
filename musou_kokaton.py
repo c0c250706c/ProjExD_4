@@ -137,6 +137,7 @@ class Bomb(pg.sprite.Sprite):
         self.rect.centerx = emy.rect.centerx
         self.rect.centery = emy.rect.centery+emy.rect.height//2
         self.speed = 6
+        self.state = "normal"
 
     def update(self):
         """
@@ -435,10 +436,16 @@ def main():
             exps.add(Explosion(bomb, 50))
 
         # こうかとんと爆弾の衝突判定
-        for bomb in pg.sprite.spritecollide(bird, bombs, True):
-            if bird.state == "hyper":
+        for bomb in pg.sprite.spritecollide(bird, bombs, False): # 👈 TrueからFalseに変更（中で個別処理するため）
+            if bomb.state == "inactive":
+                # 👈 EMPで無効化された爆弾なら、爆発エフェクトを出して消滅させるだけ（ダメージなし）
+                exps.add(Explosion(bomb, 50))
+                bomb.kill()
+            elif bird.state == "hyper":
                 score.value += 1
+                bomb.kill()
             else:  
+                bomb.kill()
                 bird.change_img(8, screen)  # こうかとん悲しみエフェクト
                 life.num -= 1               # 残機-1
                 
@@ -453,7 +460,7 @@ def main():
                     life.update(screen)
                     pg.display.update()
                     time.sleep(1)
-                return
+
             
         bird.update(key_lst, screen)
         beams.update()
