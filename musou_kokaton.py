@@ -153,14 +153,15 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, angle_offset: float = 0):
         """
         ビーム画像Surfaceを生成する
-        引数 bird：ビームを放つこうかとん
+        引数1 bird：ビームを放つこうかとん
+        引数2 angle_offset：基本の向きからの回転角度（弾幕用）
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle = math.degrees(math.atan2(-self.vy, self.vx)) + angle_offset
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 1.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -178,7 +179,21 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+class NeoBeam:
+    """
+    追加機能６：一度に多方向のビームを放つ弾幕に関するクラス
+    """
+    def __init__(self, bird: Bird, num: int):
+        self.bird = bird
+        self.num = num
 
+    def gen_beams(self) -> list[Beam]:
+        beams_list = []
+        step = int(100 / (self.num - 1)) if self.num > 1 else 1
+        for angle in range(-50, +51, step):
+            beams_list.append(Beam(self.bird, angle))
+        return beams_list
+    
 class Explosion(pg.sprite.Sprite):
     """
     爆発に関するクラス
@@ -385,7 +400,11 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
-                    beams.add(Beam(bird))
+                    if key_lst[pg.K_LSHIFT]: # 左Shiftキーが押されていたら弾幕
+                        neobeam = NeoBeam(bird, 5)
+                        beams.add(neobeam.gen_beams())
+                    else:
+                        beams.add(Beam(bird))
             # 「e」キー押下かつスコアが20より大きい場合、EMPを発動
                 if event.key == pg.K_e and score.value > 20:
                     score.value -= 20  # スコアを20消費
